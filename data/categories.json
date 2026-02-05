@@ -1,0 +1,38 @@
+[
+  {
+    "id": "phones",
+    "name": "Smartphones",
+    "icon": "fas fa-mobile-alt",
+    "count": 156
+  },
+  {
+    "id": "laptops",
+    "name": "Laptops",
+    "icon": "fas fa-laptop",
+    "count": 89
+  },
+  {
+    "id": "tablets",
+    "name": "Tablets",
+    "icon": "fas fa-tablet-alt",
+    "count": 45
+  },
+  {
+    "id": "computers",
+    "name": "Computers",
+    "icon": "fas fa-desktop",
+    "count": 67
+  },
+  {
+    "id": "accessories",
+    "name": "Accessories",
+    "icon": "fas fa-headphones",
+    "count": 234
+  },
+  {
+    "id": "other",
+    "name": "Other Electronics",
+    "icon": "fas fa-gamepad",
+    "count": 112
+  }
+]

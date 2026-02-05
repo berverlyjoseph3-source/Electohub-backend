@@ -1,0 +1,414 @@
+[
+  {
+    "name": "iPhone 14 Pro",
+    "slug": "iphone-14-pro",
+    "category": "phones",
+    "brand": "Apple",
+    "model": "iPhone 14 Pro",
+    "description": "Latest iPhone with Dynamic Island, A16 Bionic chip, and 48MP camera",
+    "shortDescription": "Pro camera system, Emergency SOS, Dynamic Island",
+    "price": 999,
+    "discountPrice": 899,
+    "stock": 50,
+    "images": [
+      {
+        "url": "https://images.unsplash.com/photo-1663499482523-1c0c1eae0999?w=800&auto=format&fit=crop",
+        "alt": "iPhone 14 Pro"
+      }
+    ],
+    "specifications": [
+      {
+        "key": "Display",
+        "value": "6.1-inch Super Retina XDR"
+      },
+      {
+        "key": "Processor",
+        "value": "A16 Bionic"
+      },
+      {
+        "key": "RAM",
+        "value": "6GB"
+      },
+      {
+        "key": "Storage",
+        "value": "128GB/256GB/512GB/1TB"
+      },
+      {
+        "key": "Camera",
+        "value": "48MP Main + 12MP Ultra Wide + 12MP Telephoto"
+      },
+      {
+        "key": "Battery",
+        "value": "3200 mAh"
+      }
+    ],
+    "features": [
+      "5G",
+      "Face ID",
+      "Ceramic Shield",
+      "IP68 Water Resistance"
+    ],
+    "tags": [
+      "apple",
+      "iphone",
+      "smartphone",
+      "premium"
+    ],
+    "isFeatured": true,
+    "isActive": true,
+    "isInStock": true,
+    "rating": {
+      "average": 4.8,
+      "count": 250
+    },
+    "salesCount": 120,
+    "views": 1506,
+    "_id": "ml7l1c6clycsml1qxca",
+    "createdBy": "ml7l1c5pfhnwog8621t",
+    "createdAt": "2026-02-04T05:23:56.772Z",
+    "updatedAt": "2026-02-04T05:23:56.772Z"
+  },
+  {
+    "name": "MacBook Pro 16\" M2",
+    "slug": "macbook-pro-16-m2",
+    "category": "laptops",
+    "brand": "Apple",
+    "model": "MacBook Pro 16\"",
+    "description": "Professional laptop with M2 Pro chip, Liquid Retina XDR display",
+    "shortDescription": "M2 Pro chip, 16-inch Liquid Retina XDR, Pro performance",
+    "price": 2499,
+    "stock": 30,
+    "images": [
+      {
+        "url": "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=800&auto=format&fit=crop",
+        "alt": "MacBook Pro 16\""
+      }
+    ],
+    "specifications": [
+      {
+        "key": "Display",
+        "value": "16.2-inch Liquid Retina XDR"
+      },
+      {
+        "key": "Processor",
+        "value": "Apple M2 Pro (12-core)"
+      },
+      {
+        "key": "RAM",
+        "value": "16GB Unified Memory"
+      },
+      {
+        "key": "Storage",
+        "value": "512GB SSD"
+      },
+      {
+        "key": "Graphics",
+        "value": "19-core GPU"
+      },
+      {
+        "key": "Battery",
+        "value": "Up to 22 hours"
+      }
+    ],
+    "features": [
+      "ProMotion",
+      "Six-speaker sound system",
+      "Magic Keyboard",
+      "Thunderbolt 4"
+    ],
+    "tags": [
+      "apple",
+      "macbook",
+      "laptop",
+      "professional"
+    ],
+    "isFeatured": true,
+    "isActive": true,
+    "isInStock": true,
+    "rating": {
+      "average": 4.9,
+      "count": 180
+    },
+    "salesCount": 85,
+    "views": 1200,
+    "_id": "ml7l1c6c8mvckjklajd",
+    "createdBy": "ml7l1c5pfhnwog8621t",
+    "createdAt": "2026-02-04T05:23:56.772Z",
+    "updatedAt": "2026-02-04T05:23:56.772Z"
+  },
+  {
+    "name": "Samsung Galaxy S23 Ultra",
+    "slug": "samsung-galaxy-s23-ultra",
+    "category": "phones",
+    "brand": "Samsung",
+    "model": "Galaxy S23 Ultra",
+    "description": "Premium Android smartphone with 200MP camera and S Pen",
+    "shortDescription": "200MP camera, S Pen included, Snapdragon 8 Gen 2",
+    "price": 1199,
+    "discountPrice": 1099,
+    "stock": 45,
+    "images": [
+      {
+        "url": "https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?w=800&auto=format&fit=crop",
+        "alt": "Samsung Galaxy S23 Ultra"
+      }
+    ],
+    "specifications": [
+      {
+        "key": "Display",
+        "value": "6.8-inch Dynamic AMOLED 2X"
+      },
+      {
+        "key": "Processor",
+        "value": "Snapdragon 8 Gen 2"
+      },
+      {
+        "key": "RAM",
+        "value": "12GB"
+      },
+      {
+        "key": "Storage",
+        "value": "256GB/512GB/1TB"
+      },
+      {
+        "key": "Camera",
+        "value": "200MP Main + 12MP Ultra Wide + 10MP Telephoto x2"
+      },
+      {
+        "key": "Battery",
+        "value": "5000 mAh"
+      }
+    ],
+    "features": [
+      "S Pen",
+      "100x Space Zoom",
+      "8K Video",
+      "IP68",
+      "5G"
+    ],
+    "tags": [
+      "samsung",
+      "android",
+      "smartphone",
+      "camera"
+    ],
+    "isFeatured": true,
+    "isActive": true,
+    "isInStock": true,
+    "rating": {
+      "average": 4.7,
+      "count": 320
+    },
+    "salesCount": 210,
+    "views": 1811,
+    "_id": "ml7l1c6cfm7d5gn4wp",
+    "createdBy": "ml7l1c5pfhnwog8621t",
+    "createdAt": "2026-02-04T05:23:56.772Z",
+    "updatedAt": "2026-02-04T05:23:56.772Z"
+  },
+  {
+    "name": "AirPods Pro (2nd Gen)",
+    "slug": "airpods-pro-2nd-gen",
+    "category": "accessories",
+    "brand": "Apple",
+    "model": "AirPods Pro 2",
+    "description": "Wireless earbuds with Active Noise Cancellation and Spatial Audio",
+    "shortDescription": "Active Noise Cancellation, Adaptive Transparency, MagSafe Charging",
+    "price": 249,
+    "stock": 100,
+    "images": [
+      {
+        "url": "https://images.unsplash.com/photo-1606220945770-b5b6c2c55bf1?w=800&auto=format&fit=crop",
+        "alt": "AirPods Pro 2"
+      }
+    ],
+    "specifications": [
+      {
+        "key": "Driver",
+        "value": "Custom high-excursion Apple driver"
+      },
+      {
+        "key": "ANC",
+        "value": "Active Noise Cancellation"
+      },
+      {
+        "key": "Battery Life",
+        "value": "6 hours (ANC on)"
+      },
+      {
+        "key": "Case Battery",
+        "value": "30+ hours"
+      },
+      {
+        "key": "Connectivity",
+        "value": "Bluetooth 5.3"
+      },
+      {
+        "key": "Charging",
+        "value": "MagSafe, Qi, Lightning"
+      }
+    ],
+    "features": [
+      "Personalized Spatial Audio",
+      "Adaptive EQ",
+      "Sweat & Water Resistant",
+      "Find My"
+    ],
+    "tags": [
+      "apple",
+      "airpods",
+      "earbuds",
+      "wireless"
+    ],
+    "isFeatured": true,
+    "isActive": true,
+    "isInStock": true,
+    "rating": {
+      "average": 4.8,
+      "count": 420
+    },
+    "salesCount": 350,
+    "views": 2516,
+    "_id": "ml7l1c6c4a32w2a79gv",
+    "createdBy": "ml7l1c5pfhnwog8621t",
+    "createdAt": "2026-02-04T05:23:56.772Z",
+    "updatedAt": "2026-02-04T05:23:56.772Z"
+  },
+  {
+    "name": "PlayStation 5",
+    "slug": "playstation-5",
+    "category": "other",
+    "brand": "Sony",
+    "model": "PS5 Console",
+    "description": "Next-gen gaming console with ultra-high speed SSD and ray tracing",
+    "shortDescription": "Ultra-high speed SSD, ray tracing, 4K/120fps gaming",
+    "price": 499,
+    "stock": 20,
+    "images": [
+      {
+        "url": "https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?w=800&auto=format&fit=crop",
+        "alt": "PlayStation 5"
+      }
+    ],
+    "specifications": [
+      {
+        "key": "CPU",
+        "value": "AMD Ryzen Zen 2, 8-core"
+      },
+      {
+        "key": "GPU",
+        "value": "AMD RDNA 2, 10.28 TFLOPs"
+      },
+      {
+        "key": "RAM",
+        "value": "16GB GDDR6"
+      },
+      {
+        "key": "Storage",
+        "value": "825GB Custom SSD"
+      },
+      {
+        "key": "Output",
+        "value": "4K 120Hz, 8K"
+      },
+      {
+        "key": "Optical Drive",
+        "value": "4K UHD Blu-ray"
+      }
+    ],
+    "features": [
+      "3D Audio",
+      "DualSense Controller",
+      "Backward Compatibility",
+      "PS5 Game Boost"
+    ],
+    "tags": [
+      "sony",
+      "gaming",
+      "console",
+      "playstation"
+    ],
+    "isFeatured": true,
+    "isActive": true,
+    "isInStock": true,
+    "rating": {
+      "average": 4.9,
+      "count": 580
+    },
+    "salesCount": 450,
+    "views": 3225,
+    "_id": "ml7l1c6cd3rmfhnu82g",
+    "createdBy": "ml7l1c5pfhnwog8621t",
+    "createdAt": "2026-02-04T05:23:56.772Z",
+    "updatedAt": "2026-02-04T05:23:56.772Z"
+  },
+  {
+    "name": "Logitech MX Master 3S",
+    "slug": "logitech-mx-master-3s",
+    "category": "accessories",
+    "brand": "Logitech",
+    "model": "MX Master 3S",
+    "description": "Wireless mouse with ultra-fast scrolling and 8K DPI sensor",
+    "shortDescription": "Ultra-fast scrolling, 8K DPI, multi-device connectivity",
+    "price": 99,
+    "discountPrice": 89,
+    "stock": 75,
+    "images": [
+      {
+        "url": "https://images.unsplash.com/photo-1527814050087-3793815479db?w=800&auto=format&fit=crop",
+        "alt": "Logitech MX Master 3S"
+      }
+    ],
+    "specifications": [
+      {
+        "key": "Sensor",
+        "value": "Darkfield High Precision, 8000 DPI"
+      },
+      {
+        "key": "Battery Life",
+        "value": "70 days"
+      },
+      {
+        "key": "Connectivity",
+        "value": "Bluetooth, 2.4GHz Wireless"
+      },
+      {
+        "key": "Buttons",
+        "value": "7 programmable buttons"
+      },
+      {
+        "key": "Compatibility",
+        "value": "Windows, macOS, Linux, iPadOS"
+      },
+      {
+        "key": "Weight",
+        "value": "141g"
+      }
+    ],
+    "features": [
+      "MagSpeed scrolling",
+      "Flow cross-computer control",
+      "Quick charging",
+      "Ergonomic design"
+    ],
+    "tags": [
+      "logitech",
+      "mouse",
+      "wireless",
+      "ergonomic"
+    ],
+    "isFeatured": true,
+    "isActive": true,
+    "isInStock": true,
+    "rating": {
+      "average": 4.8,
+      "count": 890
+    },
+    "salesCount": 720,
+    "views": 4211,
+    "_id": "ml7l1c6cbr80g6mdbwr",
+    "createdBy": "ml7l1c5pfhnwog8621t",
+    "createdAt": "2026-02-04T05:23:56.772Z",
+    "updatedAt": "2026-02-04T05:23:56.772Z"
+  }
+]

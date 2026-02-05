@@ -1,0 +1,56 @@
+[
+  {
+    "_id": "order_ml8sbw4vaao4t63w79u",
+    "userId": "user_ml8sbw4vatz3dogf7pf",
+    "items": [
+      {
+        "productId": "ml7l1c6clycsml1qxca",
+        "name": "iPhone 14 Pro",
+        "price": 899,
+        "quantity": 1
+      },
+      {
+        "productId": "ml7l1c6c4a32w2a79gv",
+        "name": "AirPods Pro",
+        "price": 249,
+        "quantity": 1
+      }
+    ],
+    "total": 1148,
+    "status": "delivered",
+    "payment": {
+      "method": "credit_card",
+      "status": "completed"
+    },
+    "shipping": {
+      "method": "express",
+      "address": "123 Main St, City, Country"
+    },
+    "createdAt": "2026-02-03T01:35:52.687Z",
+    "updatedAt": "2026-02-03T01:35:52.688Z"
+  },
+  {
+    "_id": "order_ml8sbw4wxx39al4nx1",
+    "userId": "user_ml8sbw4w1yy8umjgkpm",
+    "items": [
+      {
+        "productId": "ml7l1c6c8mvckjklajd",
+        "name": "MacBook Pro 16\"",
+        "price": 2499,
+        "quantity": 1
+      }
+    ],
+    "total": 2499,
+    "status": "shipped",
+    "payment": {
+      "method": "paypal",
+      "status": "completed"
+    },
+    "shipping": {
+      "method": "standard",
+      "address": "456 Oak Ave, Town, Country"
+    },
+    "createdAt": "2026-02-04T01:35:52.688Z",
+    "updatedAt": "2026-02-04T01:35:52.688Z"
+  }
+]

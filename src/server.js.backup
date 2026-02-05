@@ -1,0 +1,1250 @@
+const express = require('express');
+const cors = require('cors');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+const morgan = require('morgan');
+const path = require('path');
+const fs = require('fs');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+require('dotenv').config();
+
+const app = express();
+
+// Enhanced CORS configuration
+app.use(cors({
+    origin: function (origin, callback) {
+        // Allow all origins in development
+        const allowedOrigins = [
+            'http://localhost:8000',
+            'http://127.0.0.1:8000',
+            'http://localhost:5000',
+            'http://127.0.0.1:5000',
+            'http://localhost:5500',
+            'http://127.0.0.1:5500',
+            'http://localhost:3000',
+            'http://127.0.0.1:3000',
+            'http://127.0.0.1:8080',
+            'http://localhost:8080',
+            'null' // for file:// URLs
+        ];
+        
+        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            console.log('Blocked by CORS:', origin);
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
+}));
+
+// Handle preflight requests
+app.options('*', cors());
+
+// Rate limiting
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 100
+});
+app.use('/api/', limiter);
+
+// Body parsing
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true }));
+
+// Security middleware
+app.use(helmet({
+    contentSecurityPolicy: false, // Disable for development
+    crossOriginEmbedderPolicy: false
+}));
+
+// Logging
+app.use(morgan('dev'));
+
+// Serve static files
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+app.use(express.static(path.join(__dirname, '../')));
+
+// Data storage directory
+const DATA_DIR = path.join(__dirname, '../data');
+const DATA_FILES = {
+    users: path.join(DATA_DIR, 'users.json'),
+    products: path.join(DATA_DIR, 'products.json'),
+    orders: path.join(DATA_DIR, 'orders.json'),
+    categories: path.join(DATA_DIR, 'categories.json')
+};
+
+// Initialize data files
+function initializeDataFiles() {
+    if (!fs.existsSync(DATA_DIR)) {
+        fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+    
+    // Create empty files if they don't exist
+    Object.values(DATA_FILES).forEach(filePath => {
+        if (!fs.existsSync(filePath)) {
+            fs.writeFileSync(filePath, JSON.stringify([]));
+        }
+    });
+    
+    // Seed initial data
+    seedInitialData();
+}
+
+// Read data from JSON file
+function readData(fileName) {
+    try {
+        const data = fs.readFileSync(DATA_FILES[fileName], 'utf8');
+        return JSON.parse(data);
+    } catch (error) {
+        console.error(`Error reading ${fileName}:`, error);
+        return [];
+    }
+}
+
+// Write data to JSON file
+function writeData(fileName, data) {
+    try {
+        fs.writeFileSync(DATA_FILES[fileName], JSON.stringify(data, null, 2));
+        return true;
+    } catch (error) {
+        console.error(`Error writing ${fileName}:`, error);
+        return false;
+    }
+}
+
+// Generate unique ID
+function generateId() {
+    return Date.now().toString(36) + Math.random().toString(36).substr(2);
+}
+
+// Seed initial data
+function seedInitialData() {
+    // Check if admin user exists
+    const users = readData('users');
+    const adminExists = users.find(user => user.email === 'admin@electroshop.com');
+    
+    if (!adminExists) {
+        const hashedPassword = bcrypt.hashSync('Admin@123', 10);
+        const adminUser = {
+            _id: 'admin_' + generateId(),
+            email: 'admin@electroshop.com',
+            password: hashedPassword,
+            firstName: 'Super',
+            lastName: 'Admin',
+            phone: '+1234567890',
+            role: 'admin',
+            isActive: true,
+            emailVerified: true,
+            avatar: '/images/avatar-default.png',
+            wishlist: [],
+            cart: [],
+            orders: [],
+            createdAt: new Date().toISOString(),
+            lastLogin: null
+        };
+        users.push(adminUser);
+        writeData('users', users);
+        console.log('👑 Admin user created:', adminUser.email);
+    }
+    
+    // Create a regular test user
+    const testUserExists = users.find(user => user.email === 'test@example.com');
+    if (!testUserExists) {
+        const hashedPassword = bcrypt.hashSync('Test@123', 10);
+        const testUser = {
+            _id: 'user_' + generateId(),
+            email: 'test@example.com',
+            password: hashedPassword,
+            firstName: 'Test',
+            lastName: 'User',
+            phone: '+1234567891',
+            role: 'user',
+            isActive: true,
+            emailVerified: true,
+            avatar: '/images/avatar-default.png',
+            wishlist: [],
+            cart: [],
+            orders: [],
+            createdAt: new Date().toISOString(),
+            lastLogin: null
+        };
+        users.push(testUser);
+        writeData('users', users);
+        console.log('👤 Test user created:', testUser.email);
+    }
+    
+    // Check if products exist
+    const products = readData('products');
+    if (products.length === 0) {
+        const initialProducts = getInitialProducts();
+        const adminUser = users.find(u => u.email === 'admin@electroshop.com');
+        
+        initialProducts.forEach(product => {
+            product._id = generateId();
+            product.createdBy = adminUser._id;
+            product.createdAt = new Date().toISOString();
+            product.updatedAt = new Date().toISOString();
+            product.isActive = true;
+            product.isInStock = product.stock > 0;
+        });
+        
+        writeData('products', initialProducts);
+        console.log(`📦 ${initialProducts.length} sample products created`);
+    }
+    
+    // Seed categories
+    const categories = readData('categories');
+    if (categories.length === 0) {
+        const initialCategories = [
+            { _id: 'phones', name: 'Smartphones', icon: 'fas fa-mobile-alt', count: 156 },
+            { _id: 'laptops', name: 'Laptops', icon: 'fas fa-laptop', count: 89 },
+            { _id: 'tablets', name: 'Tablets', icon: 'fas fa-tablet-alt', count: 45 },
+            { _id: 'computers', name: 'Computers', icon: 'fas fa-desktop', count: 67 },
+            { _id: 'accessories', name: 'Accessories', icon: 'fas fa-headphones', count: 234 },
+            { _id: 'other', name: 'Other Electronics', icon: 'fas fa-gamepad', count: 112 }
+        ];
+        writeData('categories', initialCategories);
+        console.log('📊 Categories seeded');
+    }
+}
+
+function getInitialProducts() {
+    return [
+        {
+            name: 'iPhone 14 Pro',
+            slug: 'iphone-14-pro',
+            category: 'phones',
+            brand: 'Apple',
+            model: 'iPhone 14 Pro',
+            description: 'Latest iPhone with Dynamic Island, A16 Bionic chip, and 48MP camera',
+            shortDescription: 'Pro camera system, Emergency SOS, Dynamic Island',
+            price: 999,
+            discountPrice: 899,
+            stock: 50,
+            images: [
+                { url: 'https://images.unsplash.com/photo-1663499482523-1c0c1eae0999?w=800&auto=format&fit=crop', alt: 'iPhone 14 Pro' }
+            ],
+            specifications: [
+                { key: 'Display', value: '6.1-inch Super Retina XDR' },
+                { key: 'Processor', value: 'A16 Bionic' },
+                { key: 'RAM', value: '6GB' },
+                { key: 'Storage', value: '128GB/256GB/512GB/1TB' },
+                { key: 'Camera', value: '48MP Main + 12MP Ultra Wide + 12MP Telephoto' },
+                { key: 'Battery', value: '3200 mAh' }
+            ],
+            features: ['5G', 'Face ID', 'Ceramic Shield', 'IP68 Water Resistance'],
+            tags: ['apple', 'iphone', 'smartphone', 'premium'],
+            isFeatured: true,
+            rating: { average: 4.8, count: 250 },
+            salesCount: 120,
+            views: 1500
+        },
+        {
+            name: 'MacBook Pro 16" M2',
+            slug: 'macbook-pro-16-m2',
+            category: 'laptops',
+            brand: 'Apple',
+            model: 'MacBook Pro 16"',
+            description: 'Professional laptop with M2 Pro chip, Liquid Retina XDR display',
+            shortDescription: 'M2 Pro chip, 16-inch Liquid Retina XDR, Pro performance',
+            price: 2499,
+            stock: 30,
+            images: [
+                { url: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=800&auto=format&fit=crop', alt: 'MacBook Pro 16"' }
+            ],
+            specifications: [
+                { key: 'Display', value: '16.2-inch Liquid Retina XDR' },
+                { key: 'Processor', value: 'Apple M2 Pro (12-core)' },
+                { key: 'RAM', value: '16GB Unified Memory' },
+                { key: 'Storage', value: '512GB SSD' },
+                { key: 'Graphics', value: '19-core GPU' },
+                { key: 'Battery', value: 'Up to 22 hours' }
+            ],
+            features: ['ProMotion', 'Six-speaker sound system', 'Magic Keyboard', 'Thunderbolt 4'],
+            tags: ['apple', 'macbook', 'laptop', 'professional'],
+            isFeatured: true,
+            rating: { average: 4.9, count: 180 },
+            salesCount: 85,
+            views: 1200
+        },
+        {
+            name: 'Samsung Galaxy S23 Ultra',
+            slug: 'samsung-galaxy-s23-ultra',
+            category: 'phones',
+            brand: 'Samsung',
+            model: 'Galaxy S23 Ultra',
+            description: 'Premium Android smartphone with 200MP camera and S Pen',
+            shortDescription: '200MP camera, S Pen included, Snapdragon 8 Gen 2',
+            price: 1199,
+            discountPrice: 1099,
+            stock: 45,
+            images: [
+                { url: 'https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?w=800&auto=format&fit=crop', alt: 'Samsung Galaxy S23 Ultra' }
+            ],
+            specifications: [
+                { key: 'Display', value: '6.8-inch Dynamic AMOLED 2X' },
+                { key: 'Processor', value: 'Snapdragon 8 Gen 2' },
+                { key: 'RAM', value: '12GB' },
+                { key: 'Storage', value: '256GB/512GB/1TB' },
+                { key: 'Camera', value: '200MP Main + 12MP Ultra Wide + 10MP Telephoto x2' },
+                { key: 'Battery', value: '5000 mAh' }
+            ],
+            features: ['S Pen', '100x Space Zoom', '8K Video', 'IP68', '5G'],
+            tags: ['samsung', 'android', 'smartphone', 'camera'],
+            isFeatured: true,
+            rating: { average: 4.7, count: 320 },
+            salesCount: 210,
+            views: 1800
+        },
+        {
+            name: 'AirPods Pro (2nd Gen)',
+            slug: 'airpods-pro-2nd-gen',
+            category: 'accessories',
+            brand: 'Apple',
+            model: 'AirPods Pro 2',
+            description: 'Wireless earbuds with Active Noise Cancellation and Spatial Audio',
+            shortDescription: 'Active Noise Cancellation, Adaptive Transparency, MagSafe Charging',
+            price: 249,
+            stock: 100,
+            images: [
+                { url: 'https://images.unsplash.com/photo-1606220945770-b5b6c2c55bf1?w=800&auto=format&fit=crop', alt: 'AirPods Pro 2' }
+            ],
+            specifications: [
+                { key: 'Driver', value: 'Custom high-excursion Apple driver' },
+                { key: 'ANC', value: 'Active Noise Cancellation' },
+                { key: 'Battery Life', value: '6 hours (ANC on)' },
+                { key: 'Case Battery', value: '30+ hours' },
+                { key: 'Connectivity', value: 'Bluetooth 5.3' },
+                { key: 'Charging', value: 'MagSafe, Qi, Lightning' }
+            ],
+            features: ['Personalized Spatial Audio', 'Adaptive EQ', 'Sweat & Water Resistant', 'Find My'],
+            tags: ['apple', 'airpods', 'earbuds', 'wireless'],
+            isFeatured: true,
+            rating: { average: 4.8, count: 420 },
+            salesCount: 350,
+            views: 2500
+        },
+        {
+            name: 'PlayStation 5',
+            slug: 'playstation-5',
+            category: 'other',
+            brand: 'Sony',
+            model: 'PS5 Console',
+            description: 'Next-gen gaming console with ultra-high speed SSD and ray tracing',
+            shortDescription: 'Ultra-high speed SSD, ray tracing, 4K/120fps gaming',
+            price: 499,
+            stock: 20,
+            images: [
+                { url: 'https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?w=800&auto=format&fit=crop', alt: 'PlayStation 5' }
+            ],
+            specifications: [
+                { key: 'CPU', value: 'AMD Ryzen Zen 2, 8-core' },
+                { key: 'GPU', value: 'AMD RDNA 2, 10.28 TFLOPs' },
+                { key: 'RAM', value: '16GB GDDR6' },
+                { key: 'Storage', value: '825GB Custom SSD' },
+                { key: 'Output', value: '4K 120Hz, 8K' },
+                { key: 'Optical Drive', value: '4K UHD Blu-ray' }
+            ],
+            features: ['3D Audio', 'DualSense Controller', 'Backward Compatibility', 'PS5 Game Boost'],
+            tags: ['sony', 'gaming', 'console', 'playstation'],
+            isFeatured: true,
+            rating: { average: 4.9, count: 580 },
+            salesCount: 450,
+            views: 3200
+        }
+    ];
+}
+
+// Initialize data files on startup
+initializeDataFiles();
+
+// JWT Secret
+const JWT_SECRET = process.env.JWT_SECRET || 'electroshop-secret-key-2024-admin-super-secure';
+
+// ==================== AUTH ROUTES ====================
+
+// Register user
+app.post('/api/auth/register', async (req, res) => {
+    try {
+        const { email, password, firstName, lastName, phone } = req.body;
+
+        if (!email || !password || !firstName || !lastName) {
+            return res.status(400).json({
+                success: false,
+                error: 'Please provide all required fields'
+            });
+        }
+
+        const users = readData('users');
+        const existingUser = users.find(user => user.email === email);
+        if (existingUser) {
+            return res.status(400).json({
+                success: false,
+                error: 'User already exists with this email'
+            });
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const newUser = {
+            _id: 'user_' + generateId(),
+            email,
+            password: hashedPassword,
+            firstName,
+            lastName,
+            phone,
+            role: 'user',
+            isActive: true,
+            emailVerified: false,
+            avatar: '/images/avatar-default.png',
+            wishlist: [],
+            cart: [],
+            orders: [],
+            address: {},
+            createdAt: new Date().toISOString(),
+            lastLogin: null
+        };
+
+        users.push(newUser);
+        writeData('users', users);
+
+        // Generate JWT token
+        const token = jwt.sign(
+            { 
+                userId: newUser._id,
+                email: newUser.email,
+                role: newUser.role 
+            },
+            JWT_SECRET,
+            { expiresIn: '7d' }
+        );
+
+        // Remove password from response
+        const { password: _, ...userWithoutPassword } = newUser;
+
+        res.status(201).json({
+            success: true,
+            data: {
+                user: userWithoutPassword,
+                token
+            },
+            message: 'Registration successful'
+        });
+    } catch (error) {
+        console.error('Registration error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Registration failed. Please try again.'
+        });
+    }
+});
+
+// Login user
+app.post('/api/auth/login', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+
+        if (!email || !password) {
+            return res.status(400).json({
+                success: false,
+                error: 'Please provide email and password'
+            });
+        }
+
+        const users = readData('users');
+        const user = users.find(user => user.email === email);
+        
+        if (!user) {
+            return res.status(401).json({
+                success: false,
+                error: 'Invalid credentials'
+            });
+        }
+
+        if (!user.isActive) {
+            return res.status(403).json({
+                success: false,
+                error: 'Account is disabled'
+            });
+        }
+
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+        if (!isPasswordValid) {
+            return res.status(401).json({
+                success: false,
+                error: 'Invalid credentials'
+            });
+        }
+
+        // Update last login
+        user.lastLogin = new Date().toISOString();
+        writeData('users', users);
+
+        // Generate JWT token
+        const token = jwt.sign(
+            { 
+                userId: user._id,
+                email: user.email,
+                role: user.role 
+            },
+            JWT_SECRET,
+            { expiresIn: '7d' }
+        );
+
+        // Remove password from response
+        const { password: _, ...userWithoutPassword } = user;
+
+        res.json({
+            success: true,
+            data: {
+                user: userWithoutPassword,
+                token
+            },
+            message: 'Login successful'
+        });
+    } catch (error) {
+        console.error('Login error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Login failed. Please try again.'
+        });
+    }
+});
+
+// Get current user
+app.get('/api/auth/me', async (req, res) => {
+    try {
+        const authHeader = req.headers.authorization;
+        if (!authHeader) {
+            return res.status(401).json({
+                success: false,
+                error: 'No token provided'
+            });
+        }
+
+        const token = authHeader.replace('Bearer ', '');
+        
+        if (!token) {
+            return res.status(401).json({
+                success: false,
+                error: 'No token provided'
+            });
+        }
+
+        const decoded = jwt.verify(token, JWT_SECRET);
+        
+        const users = readData('users');
+        const user = users.find(user => user._id === decoded.userId);
+        
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                error: 'User not found'
+            });
+        }
+
+        // Remove password from response
+        const { password, ...userWithoutPassword } = user;
+
+        res.json({
+            success: true,
+            data: userWithoutPassword
+        });
+    } catch (error) {
+        console.error('Get user error:', error);
+        res.status(401).json({
+            success: false,
+            error: 'Invalid or expired token'
+        });
+    }
+});
+
+// ==================== PRODUCT ROUTES ====================
+
+// Get all products with filters
+app.get('/api/products', async (req, res) => {
+    try {
+        const { 
+            category, 
+            brand, 
+            minPrice, 
+            maxPrice, 
+            search, 
+            sort = 'createdAt',
+            page = 1,
+            limit = 12,
+            featured 
+        } = req.query;
+
+        let products = readData('products').filter(p => p.isActive !== false);
+
+        // Apply filters
+        if (category) {
+            products = products.filter(p => p.category === category);
+        }
+        if (brand) {
+            products = products.filter(p => p.brand === brand);
+        }
+        if (featured === 'true') {
+            products = products.filter(p => p.isFeatured === true);
+        }
+        if (minPrice) {
+            products = products.filter(p => p.price >= Number(minPrice));
+        }
+        if (maxPrice) {
+            products = products.filter(p => p.price <= Number(maxPrice));
+        }
+        if (search) {
+            const searchLower = search.toLowerCase();
+            products = products.filter(p => 
+                p.name.toLowerCase().includes(searchLower) ||
+                (p.description && p.description.toLowerCase().includes(searchLower)) ||
+                p.brand.toLowerCase().includes(searchLower) ||
+                p.category.toLowerCase().includes(searchLower)
+            );
+        }
+
+        // Apply sorting
+        if (sort === 'price_asc') {
+            products.sort((a, b) => (a.discountPrice || a.price) - (b.discountPrice || b.price));
+        } else if (sort === 'price_desc') {
+            products.sort((a, b) => (b.discountPrice || b.price) - (a.discountPrice || a.price));
+        } else if (sort === 'name') {
+            products.sort((a, b) => a.name.localeCompare(b.name));
+        } else if (sort === 'newest') {
+            products.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        } else if (sort === 'popular') {
+            products.sort((a, b) => (b.rating?.average || 0) - (a.rating?.average || 0));
+        } else {
+            products.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        }
+
+        // Pagination
+        const pageNum = Number(page);
+        const limitNum = Number(limit);
+        const startIndex = (pageNum - 1) * limitNum;
+        const endIndex = startIndex + limitNum;
+        const paginatedProducts = products.slice(startIndex, endIndex);
+
+        res.json({
+            success: true,
+            data: paginatedProducts,
+            pagination: {
+                page: pageNum,
+                limit: limitNum,
+                total: products.length,
+                pages: Math.ceil(products.length / limitNum),
+                hasNext: endIndex < products.length,
+                hasPrev: startIndex > 0
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching products:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch products'
+        });
+    }
+});
+
+// Get single product by ID
+app.get('/api/products/:id', async (req, res) => {
+    try {
+        const products = readData('products');
+        const product = products.find(p => p._id === req.params.id);
+        
+        if (!product) {
+            return res.status(404).json({
+                success: false,
+                error: 'Product not found'
+            });
+        }
+
+        // Increment view count
+        product.views = (product.views || 0) + 1;
+        writeData('products', products);
+
+        res.json({
+            success: true,
+            data: product
+        });
+    } catch (error) {
+        console.error('Error fetching product:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch product'
+        });
+    }
+});
+
+// Get featured products
+app.get('/api/products/featured/random', async (req, res) => {
+    try {
+        const limit = parseInt(req.query.limit) || 8;
+        let products = readData('products');
+        
+        // Filter featured and active products
+        products = products.filter(p => p.isFeatured && p.isActive !== false);
+        
+        // Shuffle and get random products
+        const shuffled = products.sort(() => 0.5 - Math.random());
+        const selected = shuffled.slice(0, limit);
+
+        res.json({
+            success: true,
+            data: selected
+        });
+    } catch (error) {
+        console.error('Error fetching featured products:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch featured products'
+        });
+    }
+});
+
+// Get products by category
+app.get('/api/products/category/:category', async (req, res) => {
+    try {
+        const { category } = req.params;
+        const { page = 1, limit = 12, sort = 'createdAt' } = req.query;
+        
+        let products = readData('products').filter(p => p.category === category && p.isActive !== false);
+
+        // Apply sorting
+        if (sort === 'price_asc') {
+            products.sort((a, b) => (a.discountPrice || a.price) - (b.discountPrice || b.price));
+        } else if (sort === 'price_desc') {
+            products.sort((a, b) => (b.discountPrice || b.price) - (a.discountPrice || a.price));
+        } else if (sort === 'name') {
+            products.sort((a, b) => a.name.localeCompare(b.name));
+        } else if (sort === 'newest') {
+            products.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        } else {
+            products.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        }
+
+        // Pagination
+        const pageNum = Number(page);
+        const limitNum = Number(limit);
+        const startIndex = (pageNum - 1) * limitNum;
+        const endIndex = startIndex + limitNum;
+        const paginatedProducts = products.slice(startIndex, endIndex);
+
+        res.json({
+            success: true,
+            data: paginatedProducts,
+            pagination: {
+                page: pageNum,
+                limit: limitNum,
+                total: products.length,
+                pages: Math.ceil(products.length / limitNum),
+                hasNext: endIndex < products.length,
+                hasPrev: startIndex > 0
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching category products:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch products'
+        });
+    }
+});
+
+// ==================== ADMIN ROUTES ====================
+
+// Admin middleware
+function verifyAdmin(req, res, next) {
+    try {
+        const authHeader = req.headers.authorization;
+        if (!authHeader) {
+            return res.status(401).json({
+                success: false,
+                error: 'No token provided'
+            });
+        }
+
+        const token = authHeader.replace('Bearer ', '');
+        
+        if (!token) {
+            return res.status(401).json({
+                success: false,
+                error: 'No token provided'
+            });
+        }
+
+        const decoded = jwt.verify(token, JWT_SECRET);
+        
+        const users = readData('users');
+        const user = users.find(user => user._id === decoded.userId);
+        
+        if (!user || user.role !== 'admin') {
+            return res.status(403).json({
+                success: false,
+                error: 'Admin access required'
+            });
+        }
+
+        req.user = user;
+        next();
+    } catch (error) {
+        console.error('Admin middleware error:', error);
+        res.status(401).json({
+            success: false,
+            error: 'Authentication failed'
+        });
+    }
+}
+
+// Admin dashboard stats
+app.get('/api/admin/dashboard/stats', verifyAdmin, async (req, res) => {
+    try {
+        const users = readData('users');
+        const products = readData('products');
+        const orders = readData('orders');
+
+        // Recent orders (mock for now)
+        const recentOrders = [
+            {
+                id: 'ORD-2024-00123',
+                customer: 'John Doe',
+                date: '2024-01-15',
+                items: 3,
+                total: 349.99,
+                status: 'processing'
+            },
+            {
+                id: 'ORD-2024-00122',
+                customer: 'Jane Smith',
+                date: '2024-01-14',
+                items: 1,
+                total: 1299.99,
+                status: 'shipped'
+            },
+            {
+                id: 'ORD-2024-00121',
+                customer: 'Bob Johnson',
+                date: '2024-01-13',
+                items: 2,
+                total: 199.98,
+                status: 'delivered'
+            }
+        ];
+
+        // Top products (mock for now)
+        const topProducts = products
+            .slice(0, 5)
+            .map(p => ({
+                name: p.name,
+                sales: p.salesCount || Math.floor(Math.random() * 100),
+                revenue: (p.salesCount || 0) * (p.discountPrice || p.price)
+            }));
+
+        // Calculate stats
+        const totalRevenue = recentOrders.reduce((sum, order) => sum + order.total, 0);
+        const newUsersToday = users.filter(u => {
+            const created = new Date(u.createdAt);
+            const today = new Date();
+            return created.toDateString() === today.toDateString();
+        }).length;
+
+        const lowStockProducts = products.filter(p => p.stock < 10).length;
+        const pendingOrders = recentOrders.filter(o => o.status === 'pending').length;
+
+        res.json({
+            success: true,
+            data: {
+                overview: {
+                    totalUsers: users.length,
+                    newUsersToday,
+                    totalProducts: products.length,
+                    totalOrders: orders.length,
+                    totalRevenue,
+                    lowStockProducts,
+                    pendingOrders
+                },
+                recentOrders,
+                topProducts
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching dashboard stats:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch dashboard stats'
+        });
+    }
+});
+
+// Admin get all users
+app.get('/api/admin/users', verifyAdmin, async (req, res) => {
+    try {
+        const { page = 1, limit = 20, search, role } = req.query;
+        
+        let users = readData('users');
+        
+        // Apply filters
+        if (role) {
+            users = users.filter(user => user.role === role);
+        }
+        if (search) {
+            const searchLower = search.toLowerCase();
+            users = users.filter(user => 
+                user.email.toLowerCase().includes(searchLower) ||
+                user.firstName.toLowerCase().includes(searchLower) ||
+                user.lastName.toLowerCase().includes(searchLower)
+            );
+        }
+
+        // Remove passwords
+        users = users.map(({ password, ...user }) => user);
+
+        // Sort by creation date
+        users.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+        // Pagination
+        const pageNum = Number(page);
+        const limitNum = Number(limit);
+        const startIndex = (pageNum - 1) * limitNum;
+        const endIndex = startIndex + limitNum;
+        const paginatedUsers = users.slice(startIndex, endIndex);
+
+        res.json({
+            success: true,
+            data: paginatedUsers,
+            pagination: {
+                page: pageNum,
+                limit: limitNum,
+                total: users.length,
+                pages: Math.ceil(users.length / limitNum),
+                hasNext: endIndex < users.length,
+                hasPrev: startIndex > 0
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching users:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch users'
+        });
+    }
+});
+
+// Admin update user
+app.put('/api/admin/users/:id', verifyAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { firstName, lastName, phone, address, role, isActive } = req.body;
+        
+        let users = readData('users');
+        const userIndex = users.findIndex(user => user._id === id);
+        
+        if (userIndex === -1) {
+            return res.status(404).json({
+                success: false,
+                error: 'User not found'
+            });
+        }
+
+        // Update fields
+        if (firstName !== undefined) users[userIndex].firstName = firstName;
+        if (lastName !== undefined) users[userIndex].lastName = lastName;
+        if (phone !== undefined) users[userIndex].phone = phone;
+        if (address !== undefined) users[userIndex].address = address;
+        if (role !== undefined) users[userIndex].role = role;
+        if (isActive !== undefined) users[userIndex].isActive = isActive;
+
+        writeData('users', users);
+
+        // Remove password from response
+        const { password, ...userWithoutPassword } = users[userIndex];
+
+        res.json({
+            success: true,
+            data: userWithoutPassword,
+            message: 'User updated successfully'
+        });
+    } catch (error) {
+        console.error('Error updating user:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to update user'
+        });
+    }
+});
+
+// Admin get all products
+app.get('/api/admin/products', verifyAdmin, async (req, res) => {
+    try {
+        const { page = 1, limit = 20, search, category, isActive } = req.query;
+        
+        let products = readData('products');
+        
+        // Apply filters
+        if (category) {
+            products = products.filter(p => p.category === category);
+        }
+        if (isActive !== undefined) {
+            products = products.filter(p => p.isActive === (isActive === 'true'));
+        }
+        if (search) {
+            const searchLower = search.toLowerCase();
+            products = products.filter(p => 
+                p.name.toLowerCase().includes(searchLower) ||
+                p.brand.toLowerCase().includes(searchLower) ||
+                (p.model && p.model.toLowerCase().includes(searchLower))
+            );
+        }
+
+        // Sort by creation date
+        products.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+        // Pagination
+        const pageNum = Number(page);
+        const limitNum = Number(limit);
+        const startIndex = (pageNum - 1) * limitNum;
+        const endIndex = startIndex + limitNum;
+        const paginatedProducts = products.slice(startIndex, endIndex);
+
+        res.json({
+            success: true,
+            data: paginatedProducts,
+            pagination: {
+                page: pageNum,
+                limit: limitNum,
+                total: products.length,
+                pages: Math.ceil(products.length / limitNum),
+                hasNext: endIndex < products.length,
+                hasPrev: startIndex > 0
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching products:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch products'
+        });
+    }
+});
+
+// Admin create product
+app.post('/api/admin/products', verifyAdmin, async (req, res) => {
+    try {
+        const productData = req.body;
+        
+        // Generate slug from name
+        if (productData.name && !productData.slug) {
+            productData.slug = productData.name
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/^-+|-+$/g, '');
+            
+            // Ensure unique slug
+            let products = readData('products');
+            const existing = products.find(p => p.slug === productData.slug);
+            if (existing) {
+                productData.slug = `${productData.slug}-${Date.now()}`;
+            }
+        }
+
+        productData._id = generateId();
+        productData.createdAt = new Date().toISOString();
+        productData.updatedAt = new Date().toISOString();
+        productData.createdBy = req.user._id;
+        productData.isActive = productData.isActive !== undefined ? productData.isActive : true;
+        productData.isInStock = productData.stock > 0;
+        productData.rating = productData.rating || { average: 0, count: 0 };
+        productData.salesCount = productData.salesCount || 0;
+        productData.views = productData.views || 0;
+
+        let products = readData('products');
+        products.push(productData);
+        writeData('products', products);
+
+        res.status(201).json({
+            success: true,
+            data: productData,
+            message: 'Product created successfully'
+        });
+    } catch (error) {
+        console.error('Error creating product:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to create product'
+        });
+    }
+});
+
+// Admin update product
+app.put('/api/admin/products/:id', verifyAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const updates = req.body;
+        
+        let products = readData('products');
+        const productIndex = products.findIndex(p => p._id === id);
+        
+        if (productIndex === -1) {
+            return res.status(404).json({
+                success: false,
+                error: 'Product not found'
+            });
+        }
+
+        // Update fields
+        Object.keys(updates).forEach(key => {
+            if (updates[key] !== undefined) {
+                products[productIndex][key] = updates[key];
+            }
+        });
+
+        // Update timestamps
+        products[productIndex].updatedAt = new Date().toISOString();
+        
+        // Update stock status
+        if (updates.stock !== undefined) {
+            products[productIndex].isInStock = updates.stock > 0;
+        }
+
+        writeData('products', products);
+
+        res.json({
+            success: true,
+            data: products[productIndex],
+            message: 'Product updated successfully'
+        });
+    } catch (error) {
+        console.error('Error updating product:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to update product'
+        });
+    }
+});
+
+// ==================== CATEGORY ROUTES ====================
+
+// Get all categories
+app.get('/api/categories', async (req, res) => {
+    try {
+        const categories = readData('categories');
+        res.json({
+            success: true,
+            data: categories
+        });
+    } catch (error) {
+        console.error('Error fetching categories:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch categories'
+        });
+    }
+});
+
+// ==================== HEALTH CHECK ====================
+app.get('/health', (req, res) => {
+    res.json({ 
+        status: 'OK', 
+        service: 'Electronics Marketplace API',
+        timestamp: new Date(),
+        storage: 'JSON File Storage',
+        dataFiles: Object.keys(DATA_FILES),
+        endpoints: {
+            auth: '/api/auth/*',
+            products: '/api/products/*',
+            admin: '/api/admin/*',
+            categories: '/api/categories'
+        }
+    });
+});
+
+// API documentation
+app.get('/api', (req, res) => {
+    res.json({
+        message: 'Electronics Marketplace API v1.0',
+        storage: 'File-based JSON storage',
+        endpoints: {
+            auth: {
+                register: 'POST /api/auth/register',
+                login: 'POST /api/auth/login',
+                profile: 'GET /api/auth/me'
+            },
+            products: {
+                list: 'GET /api/products',
+                single: 'GET /api/products/:id',
+                featured: 'GET /api/products/featured/random',
+                byCategory: 'GET /api/products/category/:category'
+            },
+            categories: {
+                list: 'GET /api/categories'
+            },
+            admin: {
+                dashboard: 'GET /api/admin/dashboard/stats',
+                users: 'GET /api/admin/users',
+                products: 'GET /api/admin/products',
+                createProduct: 'POST /api/admin/products'
+            }
+        }
+    });
+});
+
+// Serve frontend for any route
+app.get('*', (req, res) => {
+    if (req.path.startsWith('/api')) {
+        res.status(404).json({ 
+            success: false,
+            error: 'API endpoint not found' 
+        });
+    } else {
+        // Serve frontend files
+        res.sendFile(path.join(__dirname, '../index.html'));
+    }
+});
+
+// Error handler
+app.use((err, req, res, next) => {
+    console.error('Server error:', err.stack);
+    
+    if (err.name === 'JsonWebTokenError') {
+        return res.status(401).json({
+            success: false,
+            error: 'Invalid token'
+        });
+    }
+    
+    if (err.name === 'TokenExpiredError') {
+        return res.status(401).json({
+            success: false,
+            error: 'Token expired'
+        });
+    }
+    
+    res.status(err.status || 500).json({
+        success: false,
+        error: err.message || 'Internal server error'
+    });
+});
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, '0.0.0.0', () => {
+    console.log('='.repeat(60));
+    console.log(`🚀 Server running on port ${PORT}`);
+    console.log('='.repeat(60));
+    console.log(`🌐 Health check: http://localhost:${PORT}/health`);
+    console.log(`📚 API Docs: http://localhost:${PORT}/api`);
+    console.log(`💻 Frontend: http://localhost:${PORT}/`);
+    console.log(`🔐 Admin Login: http://localhost:${PORT}/admin-login.html`);
+    console.log('='.repeat(60));
+    console.log(`👑 Admin Credentials:`);
+    console.log(`   Email: admin@electroshop.com`);
+    console.log(`   Password: Admin@123`);
+    console.log('='.repeat(60));
+    console.log(`👤 Test User Credentials:`);
+    console.log(`   Email: test@example.com`);
+    console.log(`   Password: Test@123`);
+    console.log('='.repeat(60));
+});
