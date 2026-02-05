@@ -27,8 +27,8 @@ app.use(cors({
             'http://localhost:3000',
             'http://127.0.0.1:3000',
             'http://127.0.0.1:8080',
-            'http://localhost:8080' 
-            'https://marketplace-production-6d61.up.railway.app/',
+            'http://localhost:8080',
+            'https://marketplace-production-6d61.up.railway.app/'
         ];
         
         if (!origin || allowedOrigins.indexOf(origin) !== -1) {
