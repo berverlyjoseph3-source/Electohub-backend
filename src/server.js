@@ -28,7 +28,7 @@ app.use(cors({
             'http://127.0.0.1:3000',
             'http://127.0.0.1:8080',
             'http://localhost:8080',
-            'https://marketplace-smoky-six.vercel.app/
+            'https://marketplace-smoky-six.vercel.app/'
         ];
         
         if (!origin || allowedOrigins.indexOf(origin) !== -1) {
